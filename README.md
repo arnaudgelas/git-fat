@@ -33,8 +33,10 @@ complete in the working tree.
 
 Set a remote store for the fat objects by editing `.gitfat`.
 
+    [gitfat]
+        protocol = rsync
     [rsync]
-    remote = your.remote-host.org:/share/fat-store
+        remote = your.remote-host.org:/share/fat-store
 
 This file should typically be committed to the repository so that others
 will automatically have their remote set. This remote address can use
@@ -56,8 +58,10 @@ First, we create a repository and configure it for use with `git-fat`.
     $ cd repo
     $ git fat init
     $ cat > .gitfat
+    [gitfat]
+        protocol = rsync
     [rsync]
-    remote = localhost:/tmp/fat-store
+        remote = localhost:/tmp/fat-store
     $ mkdir -p /tmp/fat-store               # make sure the remote directory exists
     $ echo '*.gz filter=fat -crlf' > .gitattributes
     $ git add .gitfat .gitattributes
@@ -135,7 +139,7 @@ selected history.
     1 file to consider
     1f218834a137f7b185b498924e7a030008aee2ae
             6449 100%    6.15MB/s    0:00:00 (xfer#1, to-check=0/1)
-    
+
     sent 30 bytes  received 6558 bytes  4392.00 bytes/sec
     total size is 6449  speedup is 0.98
     Restoring 1f218834a137f7b185b498924e7a030008aee2ae -> master.tar.gz

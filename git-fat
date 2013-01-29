@@ -101,6 +101,12 @@ class GitFat(object):
         self.magiclens = [magiclen(enc) for enc in [self.encode_v1, self.encode_v2]] # All prior versions
     def setup(self):
         mkdir_p(self.objdir)
+    def get_protocol(self):
+        cfgpath   = os.path.join(self.gitroot,'.gitfat')
+        protocol  = gitconfig_get('gitfat.protocol', file=cfgpath)
+        if protocol is None:
+            raise RuntimeError('No gitfat.protocol in %s' % cfgpath)
+        return protocol
     def get_rsync(self):
         cfgpath   = os.path.join(self.gitroot,'.gitfat')
         remote    = gitconfig_get('rsync.remote', file=cfgpath)
@@ -125,6 +131,31 @@ class GitFat(object):
         if rshopts:
             cmd.append('--rsh=ssh' + rshopts)
         cmd += [self.objdir + '/', remote + '/']
+        return cmd
+    def get_scp(self):
+        cfgpath   = os.path.join(self.gitroot,'.gitfat')
+        scp_path  = gitconfig_get('scp.path', file=cfgpath)
+        scp_host  = gitconfig_get('scp.host', file=cfgpath)
+        scp_port  = gitconfig_get('scp.port', file=cfgpath)
+        scp_user  = gitconfig_get('scp.user', file=cfgpath)
+        if scp_path is None:
+            raise RuntimeError('No scp.path in %s' % cfgpath)
+        if scp_host is None:
+            raise RuntimeError('No scp.host in %s' % cfgpath)
+        if scp_user is None:
+            raise RuntimeError('No scp.user in %s' % cfgpath)
+        return scp_path, scp_host, scp_port, scp_user
+    def get_scp_command(self,push):
+        ( scp_path, scp_host, scp_port, scp_user ) = self.get_scp()
+        if push:
+            self.verbose('Pusing to ' + scp_user + '@' + scp_host + ':' scp_path )
+        else:
+            self.verbose('Pulling from ' + scp_user + '@' + scp_host + ':' scp_path )
+
+        if scp_port:
+            cmd = 'scp -p ' + self.objdir + '/* ' + ssh_user + '@' + scp_host + ':' + scp_path
+        else:
+            cmd = 'scp -p -P ' + scp_port + self.objdir + '/* ' + ssh_user + '@' + scp_host + ':' + scp_path
         return cmd
     def revparse(self, revname):
         return subprocess.check_output(['git', 'rev-parse', revname]).strip()
@@ -294,7 +325,14 @@ class GitFat(object):
         # (includes history). Finer-grained pushing would be useful.
         pushall = '--all' in args
         files = self.referenced_objects(all=pushall) & self.catalog_objects()
-        cmd = self.get_rsync_command(push=True)
+        protocol = self.get_protocol()
+        if protocol == 'rsync':
+            cmd = self.get_rsync_command(push=True)
+        elif protocol == 'scp':
+            cmd = self.get_scp_command(push=True)
+        else:
+            raise RuntimeError('unsupported protocol')
+
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         p.communicate(input='\x00'.join(files))
     def checkout(self, show_orphans=False):
@@ -327,7 +365,14 @@ class GitFat(object):
             if rev:
                 refargs['rev'] = rev
         files = self.referenced_objects(**refargs) - self.catalog_objects()
-        cmd = self.get_rsync_command(push=False)
+        protocol = self.get_protocol()
+        if protocol == 'rsync':
+            cmd = self.get_rsync_command(push=False)
+        elif protocol == 'scp':
+            cmd = self.get_scp_command(push=False)
+        else:
+            raise RuntimeError('unsupported protocol')
+
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         p.communicate(input='\x00'.join(files))
         self.checkout()

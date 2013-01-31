@@ -148,9 +148,9 @@ class GitFat(object):
     def get_scp_command(self,push):
         ( scp_path, scp_host, scp_port, scp_user ) = self.get_scp()
         if push:
-            self.verbose('Pusing to ' + scp_user + '@' + scp_host + ':' scp_path )
+            self.verbose('Pusing to ' + scp_user + '@' + scp_host + ':' + scp_path )
         else:
-            self.verbose('Pulling from ' + scp_user + '@' + scp_host + ':' scp_path )
+            self.verbose('Pulling from ' + scp_user + '@' + scp_host + ':' + scp_path )
 
         if scp_port:
             cmd = 'scp -p ' + self.objdir + '/* ' + ssh_user + '@' + scp_host + ':' + scp_path

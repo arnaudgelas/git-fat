@@ -117,10 +117,6 @@ class GitFat(object):
         return remote, ssh_port, ssh_user
     def get_rsync_command(self,push):
         (remote, ssh_port, ssh_user) = self.get_rsync()
-        if push:
-            self.verbose('Pushing to %s' % (remote))
-        else:
-            self.verbose('Pulling from %s' % (remote))
 
         cmd = ['rsync', '--progress', '--ignore-existing', '--from0', '--files-from=-']
         rshopts = ''
@@ -130,7 +126,12 @@ class GitFat(object):
             rshopts += ' -p ' + ssh_port
         if rshopts:
             cmd.append('--rsh=ssh' + rshopts)
-        cmd += [self.objdir + '/', remote + '/']
+        if push:
+            self.verbose('Pushing to %s' % (remote))
+            cmd += [self.objdir + '/', remote + '/']
+        else:
+            self.verbose('Pulling from %s' % (remote))
+            cmd += [remote + '/', self.objdir + '/']
         return cmd
     def get_scp(self):
         cfgpath   = os.path.join(self.gitroot,'.gitfat')

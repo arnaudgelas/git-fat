@@ -149,13 +149,16 @@ class GitFat(object):
         ( scp_path, scp_host, scp_port, scp_user ) = self.get_scp()
         if push:
             self.verbose('Pusing to ' + scp_user + '@' + scp_host + ':' + scp_path )
+            if scp_port:
+                cmd = 'scp -p -P ' + scp_port + ' ' + self.objdir + '/* ' + scp_user + '@' + scp_host + ':' + scp_path
+            else:
+                cmd = 'scp -p ' + self.objdir + '/* ' + scp_user + '@' + scp_host + ':' + scp_path
         else:
             self.verbose('Pulling from ' + scp_user + '@' + scp_host + ':' + scp_path )
-
-        if scp_port:
-            cmd = 'scp -p ' + self.objdir + '/* ' + ssh_user + '@' + scp_host + ':' + scp_path
-        else:
-            cmd = 'scp -p -P ' + scp_port + self.objdir + '/* ' + ssh_user + '@' + scp_host + ':' + scp_path
+            if scp_port:
+                cmd = 'scp -p -P ' + scp_port + ' ' + scp_user + '@' + scp_host + ':' + scp_path + '/* ' + self.gitroot + '/' + self.objdir + '/'
+            else:
+                cmd = 'scp -p ' +  scp_user + '@' + scp_host + ':' + scp_path + '/* ' + self.gitroot + '/' + self.objdir + '/'
         return cmd
     def revparse(self, revname):
         return subprocess.check_output(['git', 'rev-parse', revname]).strip()
@@ -373,6 +376,7 @@ class GitFat(object):
         else:
             raise RuntimeError('unsupported protocol')
 
+        print( cmd )
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         p.communicate(input='\x00'.join(files))
         self.checkout()

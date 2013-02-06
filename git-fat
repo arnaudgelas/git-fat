@@ -330,14 +330,17 @@ class GitFat(object):
         pushall = '--all' in args
         files = self.referenced_objects(all=pushall) & self.catalog_objects()
         protocol = self.get_protocol()
+        tShell=False
         if protocol == 'rsync':
             cmd = self.get_rsync_command(push=True)
+            tShell=False
         elif protocol == 'scp':
             cmd = self.get_scp_command(push=True)
+            tShell=True
         else:
             raise RuntimeError('unsupported protocol')
 
-        p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        p = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=tShell)
         p.communicate(input='\x00'.join(files))
     def checkout(self, show_orphans=False):
         'Update any stale files in the present working tree'
@@ -370,15 +373,18 @@ class GitFat(object):
                 refargs['rev'] = rev
         files = self.referenced_objects(**refargs) - self.catalog_objects()
         protocol = self.get_protocol()
+        tShell=False
         if protocol == 'rsync':
             cmd = self.get_rsync_command(push=False)
+            tShell = False
         elif protocol == 'scp':
             cmd = self.get_scp_command(push=False)
+            tShell = True
         else:
             raise RuntimeError('unsupported protocol')
 
         print( cmd )
-        p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        p = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=tShell)
         p.communicate(input='\x00'.join(files))
         self.checkout()
     def cmd_checkout(self, args):
